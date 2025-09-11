@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mini S3 Drive</title>
+  <style>
+    body { 
+      font-family: Arial; 
+      max-width: 600px; 
+      margin: 40px auto; 
+      padding: 20px;
+    }
+    h1 { color: #2b6cb0; }
+    input[type=file] { margin-bottom: 10px; }
+    button {
+      background: #2b6cb0;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover { background: #1e40af; }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
+    ul { padding: 0; list-style: none; }
+    li { 
+      margin: 5px 0; 
+      padding: 10px;
+      background: #f3f4f6;
+      border-radius: 4px;
+    }
+    li a {
+      text-decoration: none;
+      color: #2b6cb0;
+      font-weight: bold;
+    }
+    li a:hover { text-decoration: underline; }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .warning { background: #fffbeb; color: #d97706; border: 1px solid #fed7aa; }
+  </style>
+</head>
+<body>
+  <h1>📂 Mini S3 Drive</h1>
+  
+  <div id="status"></div>
+
+  <h3>Upload a file</h3>
+  <input type="file" id="fileInput" accept="*/*">
+  <button id="uploadBtn" onclick="uploadFile()">Upload</button>
+
+  <h3>Files (Demo Mode)</h3>
+  <div class="status warning">
+    <strong>Note:</strong> This is a demo version. Direct S3 uploads require:
+    <ul style="margin: 10px 0; padding-left: 20px;">
+      <li>• Presigned URLs from your backend</li>
+      <li>• Proper CORS configuration</li>
+      <li>• AWS credentials/IAM policies</li>
+    </ul>
+    Files added here are for demonstration only.
+  </div>
+  <ul id="fileList"></ul>
+
+<script>
+const bucketUrl = "https://aryansamaria.s3.ap-south-1.amazonaws.com";
+
+// Store files in memory for demo purposes
+let uploadedFiles = [];
+
+function showStatus(message, type = 'error') {
+  const statusDiv = document.getElementById('status');
+  statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+  setTimeout(() => statusDiv.innerHTML = '', 5000);
+}
+
+function uploadFile() {
+  const fileInput = document.getElementById("fileInput");
+  const uploadBtn = document.getElementById("uploadBtn");
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    showStatus("Please select a file first!", 'error');
+    return;
+  }
+
+  // Disable button during upload
+  uploadBtn.disabled = true;
+  uploadBtn.textContent = 'Uploading...';
+
+  // For a real implementation, you would need:
+  // 1. Get presigned URL from your backend
+  // 2. Upload to S3 using the presigned URL
+  
+  // Demo implementation - simulate upload
+  simulateUpload(file);
+}
+
+function simulateUpload(file) {
+  // Simulate network delay
+  setTimeout(() => {
+    // Add to our demo file list
+    const fileData = {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      uploadDate: new Date().toLocaleString(),
+      url: `${bucketUrl}/uploads/${file.name}` // This would be the real URL
+    };
+    
+    uploadedFiles.push(fileData);
+    addFileToList(fileData);
+    
+    showStatus(`Successfully uploaded: ${file.name}`, 'success');
+    
+    // Reset form
+    document.getElementById("fileInput").value = '';
+    const uploadBtn = document.getElementById("uploadBtn");
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = 'Upload';
+    
+  }, 1500); // Simulate 1.5 second upload
+}
+
+function addFileToList(fileData) {
+  const ul = document.getElementById("fileList");
+  const li = document.createElement("li");
+  
+  li.innerHTML = `
+    <div>
+      <a href="${fileData.url}" target="_blank">${fileData.name}</a>
+      <small style="color: #6b7280; display: block; margin-top: 4px;">
+        ${formatFileSize(fileData.size)} • ${fileData.type} • ${fileData.uploadDate}
+      </small>
+    </div>
+  `;
+  
+  ul.appendChild(li);
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Real S3 upload function (commented out - requires backend)
+/*
+async function realS3Upload(file) {
+  try {
+    // Step 1: Get presigned URL from your backend
+    const response = await fetch('/api/get-presigned-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: file.name,
+        fileType: file.type
+      })
+    });
+    
+    const { presignedUrl, fileUrl } = await response.json();
+    
+    // Step 2: Upload directly to S3
+    const uploadResponse = await fetch(presignedUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type
+      }
+    });
+    
+    if (uploadResponse.ok) {
+      showStatus(`Successfully uploaded: ${file.name}`, 'success');
+      addFileToList({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        uploadDate: new Date().toLocaleString(),
+        url: fileUrl
+      });
+    } else {
+      throw new Error('Upload failed');
+    }
+    
+  } catch (error) {
+    showStatus(`Upload failed: ${error.message}`, 'error');
+  }
+}
+*/
+</script>
+</body>
+</html>
